@@ -17,6 +17,17 @@ function formatError(err) {
   return err.message || String(err);
 }
 
+function extractExcerpt(html) {
+  if (!html || typeof html !== 'string') return '';
+  const text = html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.slice(0, 4000);
+}
+
 async function fetchWithRedirects(targetUrl) {
   let currentUrl = targetUrl;
   const redirects = [];
@@ -53,15 +64,16 @@ async function fetchWithRedirects(targetUrl) {
         }
       }
 
-      if (response.body) {
-        try {
-          await response.body.cancel();
-        } catch (_) {}
-      }
+      let bodyText = '';
+      try {
+        bodyText = await response.text();
+      } catch (_) {}
+      const body_excerpt = extractExcerpt(bodyText);
 
       return {
         status_code: response.status,
         redirects,
+        body_excerpt,
       };
     }
   } catch (err) {
@@ -113,6 +125,7 @@ async function probe(url) {
       attempts,
       error: formatError(lastError),
       checked_at,
+      body_excerpt: null,
     };
   }
 
@@ -127,6 +140,7 @@ async function probe(url) {
     attempts,
     error: is5xx ? `HTTP ${lastResult.status_code}` : null,
     checked_at,
+    body_excerpt: lastResult.body_excerpt,
   };
 }
 
