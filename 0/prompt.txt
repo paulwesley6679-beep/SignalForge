@@ -1,0 +1,16 @@
+Read SPEC.md. Create probe.js (CommonJS, Node 18+, no dependencies) exporting an async function probe(url). It must: fetch the URL with a 10s timeout and manual redirect handling, recording the redirect chain; on any failure (timeout, DNS error, 5xx) wait 2 seconds and retry once; return an evidence record { id, url, status_code, ms, redirects, attempts, error, checked_at }. A failed fetch must return status_code null and an error string, never throw. Also create probe.test.js using node:test with a local http server that returns 502 on the first request and 200 on the second, and assert that the evidence record shows attempts: 2 and status_code 200. Do not add other features.
+
+---
+
+Correction: status_code must hold the real HTTP status whenever the server responded, including 5xx (e.g. 502). Use null only when there was no response at all (timeout, DNS error, connection refused). For a 5xx or no-response result, set error to a short string like "HTTP 502" or "timeout". Add a second test: a server that always returns 502 must give status_code 502, attempts 2, and a non-null error. Keep everything else unchanged.
+
+---
+
+Create two files in the repo root and change nothing else.
+1. .gitignore containing these lines: .env, .env.*, !.env.example, node_modules/, *.log
+2. .env.example containing exactly one line: GEMINI_API_KEY=
+Do not create or read a .env file. Do not commit.
+
+---
+
+Extend probe.js so the evidence record also has a body_excerpt field. After the final response, read the body as text, remove script and style blocks and HTML tags, collapse whitespace, and keep at most the first 4000 characters. body_excerpt is null when there was no response at all (timeout, DNS error, connection refused). It must also be filled for 5xx responses (for example a 502 page that says "Bad Gateway"). Keep all existing fields and the retry behavior. Add two tests to probe.test.js: (1) a 200 response with HTML containing a script tag and a title gives a clean body_excerpt without the tags, and (2) a server that always returns 502 with a body still gives status_code 502 and a non-null body_excerpt. Run npm test. Do not commit. Do not touch .env.
