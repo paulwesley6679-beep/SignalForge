@@ -1,0 +1,21 @@
+TASK: upgrade probe.js. Edit ONLY probe.js and its existing test file. Do not touch any other file.
+
+RULES
+- Built-in Node modules only. No installs, no deletes, no git commands, never commit.
+- Do not start any server on port 4010. Tests must start their own small http server inside the test on a random free port, and close it when done.
+- You may run only: node --check probe.js, and node --test (existing tests plus your new ones).
+- The existing record fields and behavior stay exactly the same. The 4 existing tests must still pass.
+
+ADD THREE FIELDS to the evidence record returned by probe(url):
+1. final_url: the URL of the last request after following redirects (the original URL if there was no redirect). null if there was no response at all.
+2. links: an array of up to 20 unique href values taken from <a href="..."> in the RAW html (before tags are stripped), each resolved to an absolute URL using final_url. Skip mailto:, tel:, javascript: and #fragment-only links. Empty array when there is no body.
+3. attempt_log: an array with one entry per attempt, in order: { status_code, error, ms }. Same error wording as the existing error field. So a first attempt that timed out and a second that returned 200 gives two entries.
+
+Keep everything else about the record (id, url, status_code, ms, redirects, attempts, error, checked_at, body_excerpt) the same as now.
+
+ADD TESTS (in the existing test file) using a local http server started inside the test:
+- a page with <a href="/about"> and a mailto link gives links containing only the absolute /about URL
+- a 302 redirect gives final_url equal to the redirect target
+- a server that never answers the first request and answers the second gives attempts 2, attempt_log with 2 entries, and the first entry has error "timeout" (the probe timeout is 10 s, so set the test timeout high enough, or make the timeout configurable only if it already is)
+
+WHEN DONE: run node --check probe.js and node --test. Print the results. Say plainly what you verified and what you did not.
