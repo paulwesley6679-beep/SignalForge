@@ -1,0 +1,5 @@
+Read SPEC.md. Create probe.js (CommonJS, Node 18+, no dependencies) exporting an async function probe(url). It must: fetch the URL with a 10s timeout and manual redirect handling, recording the redirect chain; on any failure (timeout, DNS error, 5xx) wait 2 seconds and retry once; return an evidence record { id, url, status_code, ms, redirects, attempts, error, checked_at }. A failed fetch must return status_code null and an error string, never throw. Also create probe.test.js using node:test with a local http server that returns 502 on the first request and 200 on the second, and assert that the evidence record shows attempts: 2 and status_code 200. Do not add other features.
+
+---
+
+Correction: status_code must hold the real HTTP status whenever the server responded, including 5xx (e.g. 502). Use null only when there was no response at all (timeout, DNS error, connection refused). For a 5xx or no-response result, set error to a short string like "HTTP 502" or "timeout". Add a second test: a server that always returns 502 must give status_code 502, attempts 2, and a non-null error. Keep everything else unchanged.
