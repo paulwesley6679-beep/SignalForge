@@ -1,0 +1,41 @@
+TASK: extend fixtures/server.js with fixture routes for 7 eval cases. Edit ONLY fixtures/server.js.
+
+RULES
+- Plain Node, built-in modules only (http). No installs, no new files, no deletions, no git commands, never commit.
+- Server stays on port 4010, localhost only.
+- Keep the existing routes /ok and /always-502 and their responses EXACTLY as they are. Anything unmatched stays 404.
+- Put a code comment at the top: "SIMULATED FIXTURES for SignalForge evals. Not real businesses."
+- Page bodies must NEVER mention words like fixture, test, simulated, outdated, modern, parked-for-test, or anything that explains the expected verdict. Fictional business names only. Each page is plain HTML with a <title> and visible text.
+- Every page that has a "second page" must link to it with a normal <a href> (relative path is fine).
+- Do not run the server. You may run only: node --check fixtures/server.js
+
+ROUTES
+
+Case 3, modern site with booking (expected REJECT)
+- GET /case3/ : "Harbor & Pine Interiors", a polished contemporary studio description, services, a "Book a consultation" button, link to /case3/about
+- GET /case3/about : team and process text in the same professional tone, also with the "Book a consultation" button
+
+Case 4, old-looking site, no booking (expected QUALIFY)
+- GET /case4/ : "Adebayo Interiors". Plain HTML in an old style: table layout, a <marquee> welcome line, "Visitors: 004521", "(c) 2009", "Best viewed in Internet Explorer 6 at 800x600", contact by phone and fax only, no booking button. Link to /case4/contact
+- GET /case4/contact : same old style, phone/fax/address, "Last updated March 2010"
+
+Case 5, parked or expired domain (expected REJECT)
+- GET /case5/ : a generic registrar parking page: "This domain has expired", "Renew this domain or make an offer to buy it", no business content. Link to /case5/renew
+- GET /case5/renew : generic registrar text about renewing or buying the domain
+
+Case 2, no website, active social page (expected QUALIFY). No website route; the input gives only the social URL.
+- GET /case2/social/active : "Tolu Home Interiors", a social-style profile: bio, "Latest post: posted 2 days ago", short caption about a finished bedroom makeover. Link to /case2/social/active/posts
+- GET /case2/social/active/posts : a list of 3 recent posts, newest "posted 2 days ago", others "posted 1 week ago" and "posted 3 weeks ago"
+
+Case 6, site only redirects to a social page (expected QUALIFY)
+- GET /case6/ : HTTP 302 redirect to /case6/social/facebook-page
+- GET /case6/social/facebook-page : social-style profile for "Zainab Decor & Interiors", short bio, a few posts mentioned, link to /case6/social/facebook-page/posts
+- GET /case6/social/facebook-page/posts : list of 3 posts with relative dates
+(The agent will treat a page whose path contains "/social/" as a social page.)
+
+Case 7, intermittent timeouts (expected NEEDS_CHECK)
+- GET /case7/ and GET /case7/about : each path has its OWN request counter. On odd requests (1st, 3rd, ...) the server accepts the request and NEVER responds (no end, no headers; clean up its timer or state if the client disconnects). On even requests it returns 200 with a normal professional page for "Kemi Spaces" (link from /case7/ to /case7/about).
+- GET /__reset : resets all counters to 0 and returns 200 "ok".
+
+WHEN DONE
+Run node --check fixtures/server.js. Then print a table of every route with its status code behavior. Say plainly which things you verified and which you did not.
