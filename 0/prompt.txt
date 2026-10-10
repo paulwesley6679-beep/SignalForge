@@ -1,0 +1,12 @@
+Read SPEC.md first. Then create exactly two files and change nothing else.
+
+1. fixtures/server.js: a plain Node http server on port 4010 with no dependencies. GET /ok returns 200 HTML for a modern interior design studio with a title, a heading, a few paragraphs of services text and a "Book a consultation" button. GET /always-502 returns status 502 with an HTML body containing "502 Bad Gateway". Any other path returns 404.
+
+2. agent_v1.mjs (ES module). Take one URL from process.argv[2]. Import the probe function with: import probe from "./probe.js". Call probe(url). Then call Gemini with the @google/genai package exactly like this:
+   const ai = new GoogleGenAI({});
+   const interaction = await ai.interactions.create({ model: "gemini-3.8-flash", input: PROMPT });
+   and read interaction.output_text.
+   PROMPT must include the full evidence record as JSON and ask: "You help a web design freelancer find businesses with a weak online presence. Based on this evidence, return only JSON with these fields: opportunity_score (0-100), confidence (0-100), verdict (QUALIFY or REJECT), reason (one sentence)."
+   Strip markdown code fences from the output, parse the JSON, and print one JSON object with url, the evidence record and the verdict fields. If parsing fails, print the raw model text instead. The agent must have NO verification, NO extra investigation and NO retries beyond what probe.js already does. v1 is deliberately naive.
+
+Do NOT run agent_v1.mjs. Do NOT read or create .env. Do NOT commit. You may check syntax with: node --check agent_v1.mjs
