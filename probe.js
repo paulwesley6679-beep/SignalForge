@@ -28,6 +28,33 @@ function extractExcerpt(html) {
   return text.slice(0, 4000);
 }
 
+function extractLinks(html, finalUrl) {
+  if (!html || typeof html !== 'string' || !finalUrl) {
+    return [];
+  }
+  const regex = /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  const links = new Set();
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const rawHref = (match[1] ?? match[2] ?? match[3] ?? '').trim();
+    if (!rawHref || rawHref.startsWith('#')) {
+      continue;
+    }
+    const lower = rawHref.toLowerCase();
+    if (lower.startsWith('mailto:') || lower.startsWith('tel:') || lower.startsWith('javascript:')) {
+      continue;
+    }
+    try {
+      const resolved = new URL(rawHref, finalUrl).href;
+      links.add(resolved);
+      if (links.size >= 20) {
+        break;
+      }
+    } catch (_) {}
+  }
+  return Array.from(links);
+}
+
 async function fetchWithRedirects(targetUrl) {
   let currentUrl = targetUrl;
   const redirects = [];
@@ -69,11 +96,14 @@ async function fetchWithRedirects(targetUrl) {
         bodyText = await response.text();
       } catch (_) {}
       const body_excerpt = extractExcerpt(bodyText);
+      const links = extractLinks(bodyText, currentUrl);
 
       return {
         status_code: response.status,
         redirects,
+        final_url: currentUrl,
         body_excerpt,
+        links,
       };
     }
   } catch (err) {
@@ -87,6 +117,7 @@ async function probe(url) {
   let lastError = null;
   let attempts = 0;
   let attemptStart = 0;
+  const attempt_log = [];
 
   for (let i = 0; i < 2; i++) {
     attempts++;
@@ -100,8 +131,25 @@ async function probe(url) {
       lastError = err;
     }
 
+    const attemptMs = Date.now() - attemptStart;
     const is5xx = lastResult && lastResult.status_code >= 500 && lastResult.status_code < 600;
     const isFailure = Boolean(lastError || is5xx);
+
+    let attemptStatusCode = null;
+    let attemptError = null;
+    if (lastError) {
+      attemptStatusCode = null;
+      attemptError = formatError(lastError);
+    } else {
+      attemptStatusCode = lastResult.status_code;
+      attemptError = is5xx ? `HTTP ${lastResult.status_code}` : null;
+    }
+
+    attempt_log.push({
+      status_code: attemptStatusCode,
+      error: attemptError,
+      ms: attemptMs,
+    });
 
     if (isFailure && attempts < 2) {
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
@@ -126,6 +174,9 @@ async function probe(url) {
       error: formatError(lastError),
       checked_at,
       body_excerpt: null,
+      final_url: null,
+      links: [],
+      attempt_log,
     };
   }
 
@@ -141,6 +192,9 @@ async function probe(url) {
     error: is5xx ? `HTTP ${lastResult.status_code}` : null,
     checked_at,
     body_excerpt: lastResult.body_excerpt,
+    final_url: lastResult.final_url,
+    links: lastResult.links,
+    attempt_log,
   };
 }
 
