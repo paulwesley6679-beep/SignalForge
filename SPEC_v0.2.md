@@ -62,3 +62,8 @@ Confidence labels (for reading only; verdicts use the numbers): low <= 40, moder
 7 intermittent timeouts ...... NEEDS_CHECK
 All fixtures are SIMULATED, served from localhost, and labeled as such in the README and the demo video.
 Plan: 2-3 runs per case once the Gemini rate limit is known.
+
+## Patches (v0.2.1)
+
+1. A source's URL is the final URL after redirects (final_url in the probe record), with query and fragment removed. Two inputs that end at the same final URL are the same source.
+2. When two scoring rows match, the first row from the top wins.
