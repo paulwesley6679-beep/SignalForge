@@ -1,0 +1,28 @@
+Read SPEC_v0.2.md and agent_v1.mjs first. Then create exactly one file, eval.mjs (ES module, no new dependencies, only Node built-ins and the global fetch), and change nothing else.
+
+Purpose: run the 7 eval cases against an agent script and compare its verdict with the pinned expected verdict.
+
+Usage: node eval.mjs agent_v1.mjs (the agent script name is the first argument; default agent_v1.mjs)
+
+Cases (the input is the single argument passed to the agent; always use 127.0.0.1, never localhost):
+1 "always-502": http://127.0.0.1:4010/always-502, expected NEEDS_CHECK
+2 "no-site-active-social": http://127.0.0.1:4010/case2/social/active, expected QUALIFY
+3 "modern-site": http://127.0.0.1:4010/case3/, expected REJECT
+4 "outdated-site": http://127.0.0.1:4010/case4/, expected QUALIFY
+5 "parked-domain": http://127.0.0.1:4010/case5/, expected REJECT
+6 "redirect-to-social": http://127.0.0.1:4010/case6/, expected QUALIFY
+7 "intermittent-timeouts": http://127.0.0.1:4010/case7/, expected NEEDS_CHECK
+
+Behavior:
+- Before starting, fetch http://127.0.0.1:4010/ok. If it fails or is not 200, print "Fixture server is not running. Start it with: node fixtures\server.js" and exit 1.
+- Run the cases in order. Before case 7 only, fetch http://127.0.0.1:4010/__reset.
+- For each case run: node --env-file=.env <agent> <input> as a child process (node:child_process spawnSync, process.execPath, timeout 90000 ms, maxBuffer 10 MB). Do not read or print .env.
+- Parse the agent's stdout by taking the text from the first "{" to the last "}" and JSON.parse it. If parsing fails, the case verdict is "UNPARSEABLE" and keep the first 200 characters of stdout and stderr in an "error" field.
+- From the parsed JSON read verdict, opportunity_score, confidence, reason_code (may be missing) and reason.
+- A case passes only when verdict equals expected exactly.
+- Wait 10 seconds between cases (not after the last).
+- Print a table to the console (case id, name, expected, got, score, confidence, PASS/FAIL) and a final line "Passed X of 7".
+- Save results to results/<name>.json and results/<name>.md, where <name> is the agent file name without "agent_" and without ".mjs" (agent_v1.mjs gives v1). Create the results folder if needed. The .md file has the table, the agent name and an ISO timestamp. The .json has the full array of case results.
+- Put a short comment at the top of eval.mjs saying the fixtures are simulated.
+
+Do NOT run eval.mjs. Do NOT start the server. Do NOT read or create .env. Do NOT install anything. Do NOT commit. You may run: node --check eval.mjs
