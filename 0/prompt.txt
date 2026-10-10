@@ -1,0 +1,8 @@
+Edit only agent_v1.mjs. Add neatlogs tracing without changing the prompt, the verdict logic or the printed output format. Facts from the official neatlogs docs:
+- import { init, span, flush, shutdown } from "neatlogs"
+- Call await init({ apiKey: process.env.NEATLOGS_API_KEY, workflowName: "signalforge" }) once at the start of main().
+- span() wraps a function: span({ kind: "TOOL", toolName: "probe_site" }, async (u) => probe(u)). Use kind "TOOL" with toolName "gemini_call" for the Gemini call (the wrapped function takes the prompt and returns interaction.output_text), and kind "WORKFLOW" with name "agent_v1_run" for the whole run (takes the url and returns the final result object).
+- Move the existing top-level code into async function main(), and in a finally block run await flush(); await shutdown();
+- Keep the existing console output exactly as it is, and keep the exit when no URL is given.
+- Do NOT add any verification, extra checks or retries. v1 must stay naive.
+Do not run the agent. Do not read or touch .env. Do not commit. You may run: node --check agent_v1.mjs
