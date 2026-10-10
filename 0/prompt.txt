@@ -1,0 +1,4 @@
+Create two files in the repo root and change nothing else.
+1. .gitignore containing these lines: .env, .env.*, !.env.example, node_modules/, *.log
+2. .env.example containing exactly one line: GEMINI_API_KEY=
+Do not create or read a .env file. Do not commit.
