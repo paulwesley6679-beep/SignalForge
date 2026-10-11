@@ -79,6 +79,7 @@ const extractFindings = span({ kind: "AGENT", name: "extract_findings" }, async 
       lastError = new Error("model reply was not the expected JSON");
     } catch (e) {
       lastError = e;
+       if (String(e?.message ?? e).includes("per day")) throw e;
     }
   }
   throw lastError;
