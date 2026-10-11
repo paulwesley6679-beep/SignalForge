@@ -111,8 +111,10 @@ async function runEval() {
     } else {
       verdict = 'UNPARSEABLE';
       error = {
-        stdout: stdout.slice(0, 200),
-        stderr: stderr.slice(0, 200),
+        exitCode: proc.status,
+        signal: proc.signal,
+        stdout: stdout.slice(0, 300),
+        stderr: stderr.slice(0, 300),
       };
     }
 
@@ -144,6 +146,19 @@ async function runEval() {
 
   console.log(table);
   console.log(`Passed ${passedCount} of 7`);
+
+  const diagnostics = results.filter((r) => r.error);
+  if (diagnostics.length > 0) {
+    console.log('');
+    console.log('Empty/unparseable stdout diagnostics:');
+    for (const r of diagnostics) {
+      console.log(
+        `Case ${r.id} (${r.name}): exitCode=${r.error.exitCode ?? 'null'}, signal=${r.error.signal ?? 'none'}`
+      );
+      console.log(`  stdout: ${r.error.stdout}`);
+      console.log(`  stderr: ${r.error.stderr}`);
+    }
+  }
 
   const baseName = path.basename(agentScript);
   const name = baseName.replace(/^agent_/, '').replace(/\.mjs$/, '');
