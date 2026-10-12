@@ -27,18 +27,28 @@ You need Node and a Gemini API key in a local .env file (not committed). The dem
 
 ## Results
 
-v1 passed 3 of 7 cases (results/v1.md, one run per case). It had no way to answer NEEDS_CHECK, and it was wrong on the 502 page (REJECT at 85), on the modern site (QUALIFY at 82/85) and on the intermittent-timeout page (QUALIFY at 82/85). On case 6 its output could not be parsed once, and we do not know why.
+Simulated eval (7 cases, one run per case):
 
-v2: to be added after the v2 eval run (results/v2.md).
+| Agent | Passed |
+| ----- | ------ |
+| v1 (naive) | 3 of 7 (results/v1.md) |
+| v2 | 6 of 7 (results/v2.md) |
+
+v1 had no way to answer NEEDS_CHECK, and it was wrong on the 502 page (REJECT at 85), on the modern site (QUALIFY at 82/85) and on the intermittent-timeout page (QUALIFY at 82/85). On case 6 its output could not be parsed once, and we do not know why.
+
+v2 passed cases 1 to 5 and 7. It failed case 6 (a site that only redirects to a social page): it expected QUALIFY and returned NEEDS_CHECK with reason CONFLICT on social activity (score 70, confidence 30). Our best explanation, not verified, is that the profile page shows no post dates, so the model read it differently from the posts page. We did not change the fixture, the prompt or the rules to make it pass.
 
 Failure and recovery on the same broken 502 page, seen in neatlogs: v1 probes the page, calls the model anyway and ends with confidence 95. v2 probes, re-checks, decides in code, makes no model call, and ends with confidence 0 (NEEDS_CHECK / FETCH_FAILED).
 
 ## Real sites
 
-Tested separately from the simulated cases. Business names are not listed, so no verdicts are published about real businesses.
+Tested separately from the simulated cases, with one run each. Business names are not listed, so no verdicts are published about real businesses.
 
 - Real site 1: could not be reached from the author's network (timed out twice, 10 seconds each). v2 returned NEEDS_CHECK / FETCH_FAILED, confidence 0, with no model call.
-- More real sites: to be added after the v2 eval run.
+- Real site 2: a working interior design site. v2 read two pages that agreed and returned REJECT, score 20, confidence 70.
+- Real site 3: a "coming soon" placeholder page. v2 could read only one page, so it returned NEEDS_CHECK / LOW_EVIDENCE, confidence 40. A site with a single page can never reach QUALIFY or REJECT under the two-source rule, which is a limitation.
+
+Three sites show the pipeline runs on real pages. They do not measure accuracy.
 
 ## Crustdata (tested, optional)
 
@@ -46,19 +56,22 @@ We tested Crustdata for finding businesses. Free account, no card needed. One se
 
 ## Evidence
 
-- cfo.ai business plan (hypothetical, every input is an assumption): docs/cfo-ai-business-plan.xlsx, an export of the plan.
+- Eval results: results/v1.md and results/v2.md (with the JSON files beside them).
+- cfo.ai business plan (hypothetical, every input is an assumption): docs/cfo-ai-business-plan.xlsx, an export of the plan. The shared cfo.ai link opens without a login, but on Monday morning the Summary page's key-results block showed a render error in the logged-out view.
 - Entire checkpoints: commit eb1d33a carries an Entire-Checkpoint trailer from an OpenCode session.
 - neatlogs: before and after traces of the 502 page, described under Results.
 
 ## Honest limits
 
 - All eval sites are SIMULATED. They are served from localhost and are not real businesses. The 7 cases do not prove accuracy on real websites.
+- Cases 1 and 7 never call the model, so they test the verification code, not the model.
 - The model prompt for "outdated site" lists markers (visitor counter, marquee text, fax number, "best viewed in") that our simulated case 4 page contains. Case 4 was written together with the prompt, so a pass there is weaker evidence than the others.
 - v2 changed three things at once: the verification policy, code-computed scoring, and hiding the URL from the model. The improvement cannot be credited to one of them alone.
-- v1 was run once per case in the eval, and its numbers differ between runs (case 1 scored 20 in a hand run and 15 in the eval run).
+- Each eval case was run once, so run-to-run variation in v2 is not measured. v1's numbers did differ between runs (case 1 scored 20 in a hand run and 15 in the eval run).
+- v2 failed case 6 (see Results). A page that shows no post dates can disagree with a page that does, and the code treats that as a conflict.
 - The Gemini free tier allows 20 requests per day for this model, which limited how many runs we could do.
 - When no source can be read, v2 reports confidence 0 (the spec's cap of 40 applies when only one source is readable).
-- The real-site sample is small.
+- The real-site sample is small (three sites).
 
 ## Built with
 
